@@ -1,0 +1,11 @@
+literal values:
+    77
+    3.14
+    "Hello"
+    #t || #f
+    '(1 2 3) => (quote 1 2 3); '(+ 1 2) => (eval '(+ 1 2)) ;; 3
+    (list 1 2 3)
+    1 . 3 => (cons 1 3)
+
+expression syntax:
+    (expr args...)
