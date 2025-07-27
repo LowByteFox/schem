@@ -42,7 +42,7 @@ fn Value? Runtime.eval_expr(&self, Expression *expr) @local
         foreach (&builtin : schem::builtins) {
             if (builtin.name == name) {
                 Context args = { self.eval_args(arg_iter)! };
-                return builtin.fun(&args);
+                return builtin.fun(&args)!;
             }
         }
         break;

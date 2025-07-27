@@ -6,7 +6,7 @@ import schem::types;
 
 fn int main(String[] args)
 {
-    String code = `(+ 3 (+ 2 1))`;
+    String code = `(fault)`;
     @pool() {
         Runtime rt;
         rt.tinit();
