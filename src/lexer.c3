@@ -92,7 +92,11 @@ fn Token? lex_number(Lexer *lex) @local
 fn Token? lex_ident(Lexer *lex) @local
 {
     int start = lex.offset - 1;
-    while (!ascii::is_space(peek(lex)!)) lex.offset++;
+    while (true) {
+        char next = peek(lex)!;
+        if (ascii::is_space(next) || next == ')') break;
+        lex.offset++;
+    }
 
     return (Token) { IDENTIFIER_LITERAL, start, lex.offset - start };
 }
