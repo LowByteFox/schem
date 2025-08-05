@@ -51,6 +51,20 @@ fn Value? Runtime.eval(&self, String code)
     return self.eval_expr(expr);
 }
 
+fn Value? Runtime.get_value(&self, Value *val)
+{
+    switch (val.t) {
+    case SYMBOL:
+        return self.get_val(val.v.s)!;
+    case EXPRESSION:
+        return self.eval_expr(val.v.e)!;
+    default:
+        break;
+    }
+
+    return *val;
+}
+
 fn Value? Runtime.eval_expr(&self, Expression *expr)
 {
     Context arg_iter = { expr, self };
@@ -82,7 +96,7 @@ fn Value? Runtime.eval_expr(&self, Expression *expr)
     return types::NIL;
 }
 
-fn Value? Runtime.eval_lambda(&self, Context arg_iter, Value val) @export("_gdb")
+fn Value? Runtime.eval_lambda(&self, Context arg_iter, Value val)
 {
     if (val.v.l.parent_scope != null) self.push_scope(val.v.l.parent_scope);
     defer if (val.v.l.parent_scope != null) self.pop_scope();

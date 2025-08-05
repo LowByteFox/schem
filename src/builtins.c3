@@ -1,6 +1,7 @@
 module schem;
 
 import std::io;
+import schem::debug;
 import schem::types;
 import schem::runtime;
 
@@ -14,6 +15,21 @@ NativeFunction[] builtins = {
     {"%", &modulo},
     {"modulo", &modulo},
     {"fault", &crash},
+    {"newline", fn Value?(Context *ctx) {
+            io::printn();
+            return types::NIL;
+        }
+    },
+    {"display", fn Value?(Context *ctx) {
+            debug::display_value(*ctx.next_arg());
+            return types::NIL;
+        }
+    },
+    {"display_stack", fn Value?(Context *ctx) {
+            ctx.rt.print_stack();
+            return types::NIL;
+        }
+    },
 };
 
 NativeFunction[] builtin_macros = {
@@ -38,9 +54,9 @@ fn Value? let(Context *ctx)
     Value *expr = ctx.next_arg();
 
     if (name == null || expr == null) return NOT_ENOUGH_ARGS?;
-    if (name.t != SYMBOL || expr.t != EXPRESSION) return INCORRECT_TYPE?;
+    if (name.t != SYMBOL) return INCORRECT_TYPE?;
 
-    ctx.rt.current_scope.vars[name.v.s] = ctx.rt.eval_expr(expr.v.e)!;
+    ctx.rt.current_scope.vars[name.v.s] = ctx.rt.get_value(expr)!;
 
     return types::to_bool(true);
 }
