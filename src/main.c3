@@ -6,7 +6,7 @@ import schem::types;
 
 fn int main(String[] args)
 {
-    String code = `(fault)`;
+    String code = ``;
     @pool() {
         Runtime rt;
         rt.tinit();
@@ -43,6 +43,14 @@ fn void display_value(Value v)
         io::print(v.v.b ? "#t" : "#f");
     case EXPRESSION:
         display(v.v.e);
+    case LAMBDA:
+        io::print("(lambda ");
+        display(v.v.l.params);
+        io::print(" ");
+        display(v.v.l.body);
+        io::print(")");
+    case INVALID:
+        break;
     default:
         io::eprintfn("Unknown value of type \"%s\"", Type.names[v.t.ordinal]);
     }

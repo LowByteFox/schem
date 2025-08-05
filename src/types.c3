@@ -1,6 +1,7 @@
 module schem::types;
 
 import schem::runtime;
+import std::collections::map;
 
 alias Callback = fn Value?(Context*);
 
@@ -17,6 +18,7 @@ enum Type : char {
     SYMBOL,
     BOOLEAN,
     EXPRESSION,
+    LAMBDA,
 }
 
 union ValueUnion {
@@ -25,11 +27,23 @@ union ValueUnion {
     String s;
     bool b;
     Expression *e;
+    Lambda l;
 }
 
 struct Value {
     Type t;
     ValueUnion v;
+}
+
+struct Lambda {
+    Expression *params;
+    Expression *body;
+    Scope *parent_scope;
+}
+
+struct Scope {
+    HashMap{String,Value} vars;
+    Scope *previous;
 }
 
 // fn Value Value.add(&self, Value val) @operator(+)
@@ -52,6 +66,7 @@ struct Value {
 const Value NIL = {INVALID, {0}};
 fn Value to_num(long num) => {NUMBER, {.n = num}};
 fn Value to_dec(double num) => {DECIMAL, {.d = num}};
+fn Value to_bool(bool val) => {BOOLEAN, {.b = val}};
 
 struct Expression {
     Value current;
