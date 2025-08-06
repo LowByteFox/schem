@@ -4,6 +4,7 @@ import std::io;
 import schem::debug;
 import schem::types;
 import schem::runtime;
+import std::collections::list;
 
 faultdef NOT_ENOUGH_ARGS, INCORRECT_TYPE;
 
@@ -36,7 +37,35 @@ NativeFunction[] builtin_macros = {
     {"lambda", &lambda}, {"λ", &lambda},
     {"let", &let}, {"set!", &let},
     {"begin", &begin},
+    {"if", &cond}, {"cond", &cond},
 };
+
+fn Value? cond(Context *ctx)
+{
+    @pool() {
+        List{Value*} args;
+        args.tinit();
+
+        while (Value *val = ctx.next_arg()) {
+            args.push(val);
+        }
+        usz i = 0;
+        usz nargs = args.len();
+
+        if (nargs < 2) return types::NIL;
+
+        for (; i < nargs; i += 2) {
+            Value cond = ctx.rt.eval_expr(args.get(i).v.e)!;
+            if (cond.t != BOOLEAN) {
+                 while (i + 2 < nargs) { i += 2; }
+            } else {
+                if (cond.v.b) return ctx.rt.eval_expr(args.get(i + 1).v.e);
+            }
+        }
+    };
+
+    return types::NIL;
+}
 
 fn Value? eql(Context *ctx)
 {

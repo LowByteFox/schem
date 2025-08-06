@@ -113,6 +113,7 @@ fn Value? Runtime.eval_lambda(&self, Context arg_iter, Value val)
     Context args = { self.eval_args(arg_iter)!, self };
 
     while (Value *current = params.next_arg()) {
+        if (current.t == INVALID) break;
         if (current.t != SYMBOL) return RUNTIME_ERROR?;
 
         Value *arg = args.next_arg();
