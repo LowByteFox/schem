@@ -8,11 +8,12 @@ import std::core::mem::allocator;
 import std::collections::list;
 
 /* TODO: better naming */
-faultdef RUNTIME_ERROR;
+faultdef RUNTIME_ERROR, RUN_ERROR;
 
 struct Runtime {
     Allocator alloc;
     Scope *current_scope;
+    String error;
 }
 
 struct Context {
@@ -45,16 +46,21 @@ fn Value? Runtime.eval(&self, String code)
 {
     Parser parse = parser::tokenize(code, self.alloc)!;
     Expression *expr = parse.parse()!;
-    return self.eval_expr(expr);
+    Value v = {EXPRESSION, {.e = expr}};
+    return self.get_value(&v);
 }
 
 fn Value? Runtime.get_value(&self, Value *val)
 {
     switch (val.t) {
+    case ERROR:
+        self.error = val.v.s;
+        return RUN_ERROR?;
     case SYMBOL:
         return self.get_val(val.v.s)!;
     case EXPRESSION:
-        return self.eval_expr(val.v.e)!;
+        Value v = self.eval_expr(val.v.e)!;
+        return self.get_value(&v);
     default:
         break;
     }
@@ -107,7 +113,6 @@ fn Value? Runtime.eval_lambda(&self, Context arg_iter, Value val)
     Context args = { self.eval_args(arg_iter)!, self };
 
     while (Value *current = params.next_arg()) {
-        if (current.t == INVALID) break;
         if (current.t != SYMBOL) return RUNTIME_ERROR?;
 
         Value *arg = args.next_arg();
@@ -132,6 +137,8 @@ fn Value? Runtime.get_val(&self, String name)
 
 fn Expression*? Runtime.eval_args(&self, Context args_iter) @local
 {
+    if (args_iter.args == null) return null;
+
     Expression *expr = allocator::new(self.alloc, Expression);
     Expression *iter;
     while (Value *current = args_iter.next_arg()) {
@@ -141,11 +148,8 @@ fn Expression*? Runtime.eval_args(&self, Context args_iter) @local
         } else {
             iter = expr;
         }
-        if (current.t == EXPRESSION) {
-            iter.current = self.eval_expr(current.v.e)!;
-        } else if (current.t == SYMBOL) {
-            iter.current = self.get_val(current.v.s)!;
-        } else { iter.current = *current; }
+
+        iter.current = self.get_value(current)!;
     }
 
     return expr;

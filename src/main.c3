@@ -7,18 +7,19 @@ import schem::debug;
 
 fn int main(String[] args)
 {
-    String code = `
-(begin
-    (let twice 
-        (lambda (fn arg)
-            (fn (fn arg))))
-    (twice (lambda (x) (+ x 3)) 7))
-`;
+    String code = `(<= 1 1 1 3 4 6)`;
     @pool() {
         Runtime rt;
         rt.tinit();
-        debug::display_value(rt.eval(code)!!);
-        io::printn();
+
+        Value? val = rt.eval(code);
+        if (try val) {
+            debug::display_value(val);
+            io::printn();
+        } else if (catch excuse = val) {
+            if (excuse == runtime::RUN_ERROR) io::eprintfn("Recieved an error: %s",
+                rt.error);
+        }
     };
 	return 0;
 }

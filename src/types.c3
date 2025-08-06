@@ -19,6 +19,7 @@ enum Type : char {
     BOOLEAN,
     EXPRESSION,
     LAMBDA,
+    ERROR,
 }
 
 union ValueUnion {
@@ -46,27 +47,11 @@ struct Scope {
     Scope *previous;
 }
 
-// fn Value Value.add(&self, Value val) @operator(+)
-// {
-//     if (self.t == DECIMAL) {
-//         if (val.t == DECIMAL) {
-//             return to_dec(self.v.d + val.v.d);
-//         } else {
-//             return to_dec(self.v.d + (double) val.v.n);
-//         }
-//     } else {
-//         if (val.t == DECIMAL) {
-//             return to_dec((double) self.v.n + val.v.d);
-//         } else {
-//             return to_num(self.v.n + val.v.n);
-//         }
-//     }
-// }
-
 const Value NIL = {INVALID, {0}};
 fn Value to_num(long num) => {NUMBER, {.n = num}};
 fn Value to_dec(double num) => {DECIMAL, {.d = num}};
 fn Value to_bool(bool val) => {BOOLEAN, {.b = val}};
+fn Value to_error(String str) => {ERROR, {.s = str}};
 
 struct Expression {
     Value current;

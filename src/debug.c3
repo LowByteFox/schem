@@ -39,7 +39,7 @@ fn void display_value(Value v)
     case NUMBER:
         io::print(v.v.n);
     case DECIMAL:
-        io::print(v.v.d);
+        io::printf("%.17f", v.v.d);
     case STRING:
         io::printf("\"%s\"", v.v.s);
     case SYMBOL:
@@ -55,6 +55,7 @@ fn void display_value(Value v)
         display(v.v.l.body);
         io::print(")");
     case INVALID:
+        io::print("nil");
         break;
     default:
         io::eprintfn("Unknown value of type \"%s\"", Type.names[v.t.ordinal]);

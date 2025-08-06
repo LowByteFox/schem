@@ -34,9 +34,14 @@ fn Expression*? Parser.parse(&self)
 
 fn Expression*? Parser.parse_expression(&self) @local
 {
+    Token current = self.tokens.get(self.offset);
+    if (current.type == RBRACKET_TOKEN) {
+        self.offset++;
+        return null;
+    }
+
     Expression *expr = allocator::new(self.alloc, Expression);
     Expression *iter;
-    Token current = self.tokens.get(self.offset);
     while (current.type != RBRACKET_TOKEN) {
         if (iter != null) {
             iter.next = allocator::new(self.alloc, Expression);
