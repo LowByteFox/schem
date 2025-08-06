@@ -5,6 +5,7 @@ import schem;
 import schem::parser;
 import schem::types;
 import std::core::mem::allocator;
+import std::collections::list;
 
 /* TODO: better naming */
 faultdef RUNTIME_ERROR;
@@ -25,12 +26,8 @@ fn void Runtime.init(&self, Allocator alloc)
     self.push_scope();
 }
 
-fn void Runtime.push_scope(&self, Scope *old = null)
+fn void Runtime.push_scope(&self)
 {
-    if (old != null) {
-        self.current_scope = old;
-        return;
-    }
     Scope *scope = allocator::new(self.alloc, Scope);
     scope.previous = self.current_scope;
     scope.vars.init(self.alloc);
@@ -98,8 +95,11 @@ fn Value? Runtime.eval_expr(&self, Expression *expr)
 
 fn Value? Runtime.eval_lambda(&self, Context arg_iter, Value val)
 {
-    if (val.v.l.parent_scope != null) self.push_scope(val.v.l.parent_scope);
-    defer if (val.v.l.parent_scope != null) self.pop_scope();
+    Scope *old = self.current_scope;
+
+    if (val.v.l.parent_scope != null) self.current_scope = val.v.l.parent_scope;
+    defer if (val.v.l.parent_scope != null) self.current_scope = old;
+
     self.push_scope();
     defer self.pop_scope();
 

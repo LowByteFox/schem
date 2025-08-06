@@ -9,16 +9,10 @@ fn int main(String[] args)
 {
     String code = `
 (begin
-    (let foo
-        (lambda (x y)
-            (begin
-                (let abc (* y 2))
-                (lambda () (begin
-                    (display_stack)
-                    (+ x abc))))))
-    (display ((foo 3 4)))
-    (newline)
-    (display "Hello, World"))
+    (let twice 
+        (lambda (fn arg)
+            (fn (fn arg))))
+    (twice (lambda (x) (+ x 3)) 7))
 `;
     @pool() {
         Runtime rt;

@@ -73,9 +73,7 @@ fn Value? lambda(Context *ctx)
     ret.t = LAMBDA;
     ret.v.l.params = params.v.e;
     ret.v.l.body = body.v.e;
-    if (ctx.rt.current_scope.previous != null) {
-        ret.v.l.parent_scope = ctx.rt.current_scope;
-    }
+    ret.v.l.parent_scope = ctx.rt.current_scope;
 
     return ret;
 }
