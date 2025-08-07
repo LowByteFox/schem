@@ -27,7 +27,7 @@ NativeFunction[] builtins = {
     },
     {"display", &display},
     {"display_stack", fn Value?(Context *ctx) {
-            ctx.rt.print_stack();
+            ctx.rt.print_stack(ctx.env);
             return types::NIL;
         }
     },
@@ -40,7 +40,7 @@ NativeFunction[] builtin_macros = {
     {"if", &cond}, {"cond", &cond},
 };
 
-fn Value? cond(Context *ctx)
+fn Value? cond(Context *ctx) @export("_gdb")
 {
     @pool() {
         List{Value*} args;
@@ -54,14 +54,16 @@ fn Value? cond(Context *ctx)
 
         if (nargs < 2) return types::NIL;
 
-        for (; i < nargs; i += 2) {
-            Value cond = ctx.rt.eval_expr(args.get(i).v.e)!;
+        for (; i + 1 < nargs; i += 2) {
+            Value cond = ctx.eval_value(args.get(i))!;
             if (cond.t != BOOLEAN) {
-                 while (i + 2 < nargs) { i += 2; }
+                break;
             } else {
-                if (cond.v.b) return ctx.rt.eval_expr(args.get(i + 1).v.e);
+                if (cond.v.b) return ctx.eval_value(args.get(i + 1));
             }
         }
+
+        if (nargs - i == 1) return ctx.eval_value(args.get(i));
     };
 
     return types::NIL;
@@ -183,7 +185,7 @@ fn Value? begin(Context *ctx)
 {
     Value res = types::NIL;
     while (Value *arg = ctx.next_arg()) {
-        res = ctx.rt.eval_expr(arg.v.e)!;
+        res = ctx.eval_value(arg)!;
     }
 
     return res;
@@ -199,7 +201,7 @@ fn Value? let(Context *ctx)
     if (name.t != SYMBOL) return 
         types::to_error("let expected 1st argument to be a symbol");
 
-    ctx.rt.current_scope.vars[name.v.s] = ctx.rt.get_value(expr)!;
+    ctx.env.vars[name.v.s] = ctx.eval_value(expr)!;
 
     return types::to_bool(true);
 }
@@ -223,7 +225,7 @@ fn Value? lambda(Context *ctx)
     ret.t = LAMBDA;
     ret.v.l.params = params.v.e;
     ret.v.l.body = body.v.e;
-    ret.v.l.parent_scope = ctx.rt.current_scope;
+    ret.v.l.captured_env = ctx.env;
 
     return ret;
 }

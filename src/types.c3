@@ -39,7 +39,7 @@ struct Value {
 struct Lambda {
     Expression *params;
     Expression *body;
-    Scope *parent_scope;
+    Scope *captured_env;
 }
 
 struct Scope {

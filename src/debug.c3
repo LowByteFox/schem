@@ -4,9 +4,9 @@ import std::io;
 import schem::runtime;
 import schem::types;
 
-fn void Runtime.print_stack(&self)
+fn void Runtime.print_stack(&self, Scope *env)
 {
-    Scope *iter = self.current_scope;
+    Scope *iter = env;
 
     while (iter != null) {
         if (!iter.vars.is_empty()) {

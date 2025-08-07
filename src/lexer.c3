@@ -57,8 +57,6 @@ fn Token? next(Lexer *lex)
 
         return lex_ident(lex);
     }
-
-    return NO_TOKEN?;
 }
 
 fn char? next_char(Lexer *lex) @local

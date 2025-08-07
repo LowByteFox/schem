@@ -9,12 +9,17 @@ fn int main(String[] args)
 {
     String code = `
 (begin
-    (let fib
-        (lambda (n)
-            (if (<= 2 n)
-                (+ (fib (- n 1)) (fib (- n 2)))
-                n)))
-    (fib 10))
+    (let bind
+        (lambda (fn x)
+            (lambda (y) (fn x y))
+        )
+    )
+    (let add (lambda (x y)
+                (+ x y))
+    )
+    (let bound (bind add 3))
+    (bound 4)
+)
 `;
     @pool() {
         Runtime rt;
