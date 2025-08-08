@@ -4,6 +4,7 @@ import std::io;
 import schem;
 import schem::parser;
 import schem::types;
+import schem::gc;
 import std::core::mem::allocator;
 import std::collections::list;
 
@@ -14,6 +15,7 @@ struct Runtime {
     Allocator alloc;
     Scope global_scope;
     String error;
+    Gc gc;
 }
 
 struct Context {
@@ -22,15 +24,28 @@ struct Context {
     Scope *env;
 }
 
+TrackedObject fake @local;
+
 fn void Runtime.init(&self, Allocator alloc)
 {
     self.alloc = alloc;
     self.global_scope.vars.init(alloc);
+    self.gc.init(self.alloc);
+    fake.marked = true;
+    self.global_scope.gc_ref = &fake;
+}
+
+fn void Runtime.free(&self)
+{
+    self.gc.collect();
+    self.gc.free();
+    self.global_scope.vars.free();
 }
 
 fn Scope *Runtime.push_scope(&self, Scope *current = &self.global_scope)
 {
-    Scope *scope = allocator::new(self.alloc, Scope);
+    Scope *scope = self.gc.alloc(Scope, &types::mark_scope,
+        &types::free_scope);
     scope.previous = current;
     scope.vars.init(self.alloc);
     return scope;
@@ -41,7 +56,8 @@ fn void Runtime.tinit(&self) => self.init(tmem);
 fn Value? Runtime.eval(&self, String code)
 {
     Parser parse = parser::tokenize(code, self.alloc)!;
-    Expression *expr = parse.parse()!;
+    Expression *expr = parse.parse(&self.gc)!;
+    parse.free();
     Value v = {EXPRESSION, {.e = expr}};
     return self.eval_value(&v, &self.global_scope);
 }
@@ -66,29 +82,43 @@ fn Value? Runtime.eval_value(&self, Value *val, Scope *env)
 
 fn Value? Runtime.eval_expr(&self, Expression *expr, Scope *env)
 {
+    defer self.gc.collect();
+    defer self.gc.@mark(env);
+
     Context arg_iter = { expr, self, env };
     Value *fun = arg_iter.next_arg();
+    fun.mark();
     if (fun == null) return RUNTIME_ERROR?;
     switch (fun.t) {
     case SYMBOL:
         String name = fun.v.s;
         foreach (&schem_macro : schem::builtin_macros) {
-            if (schem_macro.name == name) return schem_macro.fun(&arg_iter);
+            if (schem_macro.name == name) {
+                Value v = schem_macro.fun(&arg_iter)!;
+                v.mark();
+                return v;
+            }
         }
 
         foreach (&builtin : schem::builtins) {
             if (builtin.name == name) {
                 Context args = { self.eval_args(arg_iter, env)!, self, env };
-                return builtin.fun(&args)!;
+                Value v = builtin.fun(&args)!;
+                v.mark();
+                return v;
             }
         }
 
         Value val = self.get_value(fun.v.s, env)!;
-        return self.eval_lambda(arg_iter, val, env)!;
+        Value v = self.eval_lambda(arg_iter, val, env)!;
+        v.mark();
+        return v;
     case EXPRESSION:
         Value val = self.eval_expr(fun.v.e, env)!;
         if (val.t != LAMBDA) return RUNTIME_ERROR?;
-        return self.eval_lambda(arg_iter, val, env)!;
+        Value v = self.eval_lambda(arg_iter, val, env)!;
+        v.mark();
+        return v;
     default:
         return RUNTIME_ERROR?;
     }
@@ -124,18 +154,20 @@ fn Value? Runtime.get_value(&self, String name, Scope *env)
         iter = iter.previous;
     }
 
-    return NOT_FOUND?;
+    return types::NIL;
 }
 
 fn Expression*? Runtime.eval_args(&self, Context args_iter, Scope *env) @local
 {
     if (args_iter.args == null) return null;
 
-    Expression *expr = allocator::new(self.alloc, Expression);
+    Expression *expr = self.gc.alloc(Expression, &types::mark_expression,
+        &types::free_expression);
     Expression *iter;
     while (Value *current = args_iter.next_arg()) {
         if (iter != null) {
-            iter.next = allocator::new(self.alloc, Expression);
+            iter.next = self.gc.alloc(Expression, &types::mark_expression,
+                &types::free_expression);
             iter = iter.next;
         } else {
             iter = expr;

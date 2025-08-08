@@ -2,8 +2,10 @@ module schem::parser;
 
 import std::collections::list;
 import std::core::mem::allocator;
+
 import schem::lexer;
 import schem::types;
+import schem::gc;
 
 faultdef SYNTAX_ERROR;
 
@@ -12,6 +14,7 @@ struct Parser {
     Lexer lex;
     List{ Token } tokens;
     usz offset;
+    Gc *gc;
 }
 
 fn void Parser.free(&self)
@@ -19,8 +22,10 @@ fn void Parser.free(&self)
     self.tokens.free();
 }
 
-fn Expression*? Parser.parse(&self)
+fn Expression*? Parser.parse(&self, Gc *gc)
 {
+    self.gc = gc;
+    defer self.gc = null;
     Token current = self.tokens.get(self.offset);
     switch (current.type) {
     case LBRACKET_TOKEN:
@@ -40,11 +45,13 @@ fn Expression*? Parser.parse_expression(&self) @local
         return null;
     }
 
-    Expression *expr = allocator::new(self.alloc, Expression);
+    Expression *expr = self.gc.alloc(Expression, &types::mark_expression,
+        &types::free_expression);
     Expression *iter;
     while (current.type != RBRACKET_TOKEN) {
         if (iter != null) {
-            iter.next = allocator::new(self.alloc, Expression);
+            iter.next = self.gc.alloc(Expression, &types::mark_expression,
+                &types::free_expression);
             iter = iter.next;
         } else {
             iter = expr;
@@ -90,7 +97,8 @@ fn Value? Parser.parse_value(&self) @local
     case QUOTE_TOKEN:
         self.offset++;
         val.t = EXPRESSION;
-        val.v.e = allocator::new(self.alloc, Expression);
+        val.v.e = self.gc.alloc(Expression, &types::mark_expression,
+            &types::free_expression);
         val.v.e.current.t = SYMBOL;
         val.v.e.current.v.s = "quote";
         current = self.tokens.get(self.offset);
@@ -100,7 +108,8 @@ fn Value? Parser.parse_value(&self) @local
             val.v.e.next = self.parse_expression()!;
             self.offset--;
         default:
-            val.v.e.next = allocator::new(self.alloc, Expression);
+            val.v.e.next = self.gc.alloc(Expression, &types::mark_expression,
+                &types::free_expression);
             val.v.e.next.current = self.parse_value()!;
         }
     default:
