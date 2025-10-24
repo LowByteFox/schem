@@ -19,21 +19,21 @@ fn int main(String[] args)
     )
     (let bound (bind add 3))
     (bound 4)
+    (bound 7)
 )
 `;
-    @pool() {
-        Runtime rt;
-        rt.tinit();
+    Runtime rt;
+    rt.init(mem);
+    defer rt.free();
 
-        Value? val = rt.eval(code);
-        if (try val) {
-            debug::display_value(val);
-            io::printn();
-        } else if (catch excuse = val) {
-            if (excuse == runtime::RUN_ERROR) io::eprintfn("Recieved an error: %s",
-                rt.error);
-            val!!;
-        }
-    };
+    Value? val = rt.eval(code);
+    if (try val) {
+        debug::display_value(val);
+        io::printn();
+    } else if (catch excuse = val) {
+        if (excuse == runtime::RUN_ERROR) io::eprintfn("Recieved an error: %s",
+            rt.error);
+        val!!;
+    }
 	return 0;
 }

@@ -40,7 +40,7 @@ NativeFunction[] builtin_macros = {
     {"if", &cond}, {"cond", &cond},
 };
 
-fn Value? cond(Context *ctx) @export("_gdb")
+fn Value? cond(Context *ctx)
 {
     @pool() {
         List{Value*} args;
@@ -181,11 +181,15 @@ fn Value? error(Context *ctx)
     return types::to_error("error expected 1 argument");
 }
 
-fn Value? begin(Context *ctx)
+fn Value? begin(Context *ctx) 
 {
     Value res = types::NIL;
     while (Value *arg = ctx.next_arg()) {
         res = ctx.eval_value(arg)!;
+        if (arg.t == EXPRESSION) {
+            /* expression no longer needed */
+            arg.v.e.free(ctx.rt.alloc);
+        }
     }
 
     return res;
@@ -195,6 +199,8 @@ fn Value? let(Context *ctx)
 {
     Value *name = ctx.next_arg();
     Value *expr = ctx.next_arg();
+    defer name.free(ctx.rt.alloc);
+    defer expr.free(ctx.rt.alloc);
 
     if (name == null || expr == null) return
         types::to_error("let expected 2 arguemnts");
@@ -206,7 +212,7 @@ fn Value? let(Context *ctx)
     return types::to_bool(true);
 }
 
-fn Value? lambda(Context *ctx)
+fn Value? lambda(Context *ctx) @export("_gdb")
 {
     Value ret;
     Value *params = ctx.next_arg();
@@ -223,9 +229,9 @@ fn Value? lambda(Context *ctx)
     }
 
     ret.t = LAMBDA;
-    ret.v.l.params = params.v.e;
-    ret.v.l.body = body.v.e;
-    ret.v.l.captured_env = ctx.env;
+    ret.v.l.params = params.v.e; /* moves ownership */
+    ret.v.l.body = body.v.e; /* moves ownership */
+    ret.v.l.captured_env = ctx.env.dup();
 
     return ret;
 }

@@ -40,11 +40,11 @@ fn Expression*? Parser.parse_expression(&self) @local
         return null;
     }
 
-    Expression *expr = allocator::new(self.alloc, Expression);
+    Expression *expr = types::new_expression(self.alloc);
     Expression *iter;
     while (current.type != RBRACKET_TOKEN) {
         if (iter != null) {
-            iter.next = allocator::new(self.alloc, Expression);
+            iter.next = types::new_expression(self.alloc);
             iter = iter.next;
         } else {
             iter = expr;
@@ -90,7 +90,7 @@ fn Value? Parser.parse_value(&self) @local
     case QUOTE_TOKEN:
         self.offset++;
         val.t = EXPRESSION;
-        val.v.e = allocator::new(self.alloc, Expression);
+        val.v.e = types::new_expression(self.alloc);
         val.v.e.current.t = SYMBOL;
         val.v.e.current.v.s = "quote";
         current = self.tokens.get(self.offset);
@@ -100,7 +100,7 @@ fn Value? Parser.parse_value(&self) @local
             val.v.e.next = self.parse_expression()!;
             self.offset--;
         default:
-            val.v.e.next = allocator::new(self.alloc, Expression);
+            val.v.e.next = types::new_expression(self.alloc);
             val.v.e.next.current = self.parse_value()!;
         }
     default:
