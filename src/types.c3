@@ -112,6 +112,19 @@ fn Scope *Scope.dup(&self)
     return self;
 }
 
+fn Value Value.dup(&self)
+{
+    if (self.t == EXPRESSION) {
+        self.v.e.dup();
+    } else if (self.t == LAMBDA) {
+        self.v.l.params.dup();
+        self.v.l.body.dup();
+        self.v.l.captured_env.dup();
+    }
+
+    return *self;
+}
+
 fn void Value.free(&self, Allocator alloc)
 {
     if (self.t == EXPRESSION) {

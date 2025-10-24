@@ -75,7 +75,7 @@ fn Value? Runtime.eval_value(&self, Value *val, Scope *env)
         self.error = val.v.s;
         return RUN_ERROR?;
     case SYMBOL:
-        return self.get_value(val.v.s, env)!;
+        return self.get_value(val.v.s, env)!.dup();
     case EXPRESSION:
         defer val.v.e.free(self.alloc);
         Value v = self.eval_expr(val.v.e.dup(), env)!;

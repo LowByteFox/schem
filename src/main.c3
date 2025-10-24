@@ -7,21 +7,7 @@ import schem::debug;
 
 fn int main(String[] args)
 {
-    String code = `
-(begin
-    (let bind
-        (lambda (fn x)
-            (lambda (y) (fn x y))
-        )
-    )
-    (let add (lambda (x y)
-                (+ x y))
-    )
-    (let bound (bind add 3))
-    (bound 4)
-    (bound 7)
-)
-`;
+    String code = `(display "hello, World")`;
     Runtime rt;
     rt.init(mem);
     defer rt.free();
@@ -30,6 +16,7 @@ fn int main(String[] args)
     if (try val) {
         debug::display_value(val);
         io::printn();
+        val.free(rt.alloc);
     } else if (catch excuse = val) {
         if (excuse == runtime::RUN_ERROR) io::eprintfn("Recieved an error: %s",
             rt.error);
